@@ -1,8 +1,8 @@
-const API_KEY = "8265bd1679663a7ea12ac168da84d2e8"; // Using a demo key for preview
+const API_KEY = "8265bd1679663a7ea12ac168da84d2e8"; 
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
-export const getImageUrl = (path: string, size: "w500" | "original" = "w500") => 
+export const getImageUrl = (path: string, size: "w92" | "w500" | "original" = "w500") => 
   path ? `${IMAGE_BASE}/${size}${path}` : "/placeholder.svg";
 
 export const fetchTrending = async (): Promise<Movie[]> => {
@@ -28,12 +28,15 @@ export const getMovieDetails = async (id: number): Promise<Movie> => {
   const details = await detailsRes.json();
   const credits = await creditsRes.json();
   const videos = await videosRes.json();
-  const providers = await providersRes.json();
+  const providersData = await providersRes.json();
 
   const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube")?.key;
   const director = credits.crew?.find((c: any) => c.job === "Director")?.name;
   const cast = credits.cast?.slice(0, 5).map((c: any) => c.name);
-  const ott = providers.results?.US?.flatrate?.map((p: any) => p.provider_name) || [];
+  
+  const usProviders = providersData.results?.US;
+  const ott = usProviders?.flatrate || [];
+  const watchLink = usProviders?.link;
 
   return {
     ...details,
@@ -41,7 +44,8 @@ export const getMovieDetails = async (id: number): Promise<Movie> => {
     director,
     cast,
     trailer_key: trailer,
-    providers: ott
+    providers: ott,
+    watch_link: watchLink
   };
 };
 

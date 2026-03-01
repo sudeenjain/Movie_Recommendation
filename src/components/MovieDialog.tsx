@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Movie } from "@/types/movie";
 import { getMovieDetails, getImageUrl } from "@/services/tmdb";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Star, Play, Info, Plus, Check } from "lucide-react";
+import { Calendar, Clock, Star, Play, Info, Plus, Check, ExternalLink } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useWatchlist } from "@/hooks/use-watchlist";
@@ -37,22 +37,23 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden bg-background border-none shadow-2xl">
         <ScrollArea className="max-h-[90vh]">
-          <div className="relative aspect-video w-full">
+          <div className="relative aspect-video w-full bg-black">
             {details?.trailer_key ? (
               <iframe
                 className="w-full h-full"
-                src={`https://www.youtube.com/embed/${details.trailer_key}?autoplay=1&mute=1`}
+                src={`https://www.youtube.com/embed/${details.trailer_key}?autoplay=1&mute=0&rel=0`}
                 title="Trailer"
                 allow="autoplay; encrypted-media"
+                allowFullScreen
               />
             ) : (
               <img
                 src={getImageUrl(movie.backdrop_path, "original")}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover opacity-60"
                 alt={movie.title}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
           </div>
 
           <div className="p-8 -mt-20 relative z-10">
@@ -63,6 +64,18 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                   className="w-full rounded-xl shadow-2xl border-4 border-background"
                   alt={movie.title}
                 />
+                
+                {details?.watch_link && (
+                  <Button 
+                    className="w-full mt-4 gap-2 font-bold" 
+                    asChild
+                  >
+                    <a href={details.watch_link} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4" />
+                      Watch Now
+                    </a>
+                  </Button>
+                )}
               </div>
 
               <div className="flex-1 space-y-6">
@@ -90,14 +103,16 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                       )}
                     </div>
                   </div>
-                  <Button
-                    variant={inWatchlist ? "secondary" : "default"}
-                    size="icon"
-                    className="rounded-full shrink-0"
-                    onClick={() => toggleWatchlist(movie)}
-                  >
-                    {inWatchlist ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={inWatchlist ? "secondary" : "default"}
+                      size="icon"
+                      className="rounded-full shrink-0"
+                      onClick={() => toggleWatchlist(movie)}
+                    >
+                      {inWatchlist ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -113,25 +128,19 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                   <p className="text-muted-foreground leading-relaxed">{movie.overview}</p>
                 </div>
 
-                {details?.cast && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Director</h4>
-                      <p className="text-sm font-medium">{details.director}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Top Cast</h4>
-                      <p className="text-sm font-medium">{details.cast.join(", ")}</p>
-                    </div>
-                  </div>
-                )}
-
                 {details?.providers && details.providers.length > 0 && (
                   <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                    <h4 className="text-xs font-bold uppercase text-primary mb-2">Available On</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <h4 className="text-xs font-bold uppercase text-primary mb-3">Available On</h4>
+                    <div className="flex flex-wrap gap-4">
                       {details.providers.map((p) => (
-                        <span key={p} className="text-sm font-semibold">{p}</span>
+                        <div key={p.provider_id} className="flex items-center gap-2 group">
+                          <img 
+                            src={getImageUrl(p.logo_path, "w92")} 
+                            alt={p.provider_name}
+                            className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-110 transition-transform"
+                          />
+                          <span className="text-sm font-medium">{p.provider_name}</span>
+                        </div>
                       ))}
                     </div>
                   </div>

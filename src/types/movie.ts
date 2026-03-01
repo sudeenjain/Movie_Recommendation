@@ -1,3 +1,9 @@
+export interface WatchProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+}
+
 export interface Movie {
   id: number;
   title: string;
@@ -12,7 +18,8 @@ export interface Movie {
   director?: string;
   cast?: string[];
   trailer_key?: string;
-  providers?: string[];
+  providers?: WatchProvider[];
+  watch_link?: string;
   _reason?: string;
   _score?: number;
 }
