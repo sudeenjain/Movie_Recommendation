@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Movie } from "@/types/movie";
 import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP } from "@/services/tmdb";
 import MovieCard from "@/components/MovieCard";
@@ -11,7 +11,7 @@ import Footer from "@/components/Footer";
 import IntroAnimation from "@/components/IntroAnimation";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
 import { TrendingUp, Bookmark, BrainCircuit, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 
 const Index = () => {
@@ -27,6 +27,21 @@ const Index = () => {
   const [introComplete, setIntroComplete] = useState(false);
   
   const { watchlist } = useWatchlist();
+
+  // Mouse following aura logic
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { damping: 50, stiffness: 400 });
+  const springY = useSpring(mouseY, { damping: 50, stiffness: 400 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Handle initial load and filters
   useEffect(() => {
@@ -73,15 +88,12 @@ const Index = () => {
     setSelectedMood(null);
   };
 
-  // Animation Variants for Main Content
   const contentVariants = {
-    hidden: { opacity: 0, scale: 0.98 },
+    hidden: { opacity: 0 },
     visible: { 
       opacity: 1, 
-      scale: 1,
       transition: { 
         duration: 1.2, 
-        ease: [0.22, 1, 0.36, 1],
         staggerChildren: 0.1
       }
     }
@@ -96,6 +108,14 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground pb-24 md:pb-0 overflow-x-hidden">
       <IntroAnimation onComplete={() => setIntroComplete(true)} />
 
+      {/* Dynamic Aura Background */}
+      <motion.div 
+        className="fixed inset-0 pointer-events-none z-0 opacity-40"
+        style={{
+          background: `radial-gradient(600px circle at ${springX}px ${springY}px, rgba(var(--primary-rgb), 0.15), transparent 80%)`
+        }}
+      />
+
       <AnimatePresence>
         {introComplete && (
           <motion.div
@@ -103,16 +123,8 @@ const Index = () => {
             animate="visible"
             variants={contentVariants}
           >
-            {/* Animated Background Elements */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px] animate-pulse delay-1000" />
-            </div>
-
             {/* Hero Section */}
             <div className="relative min-h-[60vh] md:h-[70vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-12 md:pt-0 z-10">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent opacity-50" />
-              
               <motion.div variants={itemVariants} className="relative mb-8">
                 <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] select-none">
                   CINE<span className="text-primary">AI</span>
@@ -132,17 +144,12 @@ const Index = () => {
             <main className="max-w-7xl mx-auto px-4 pb-20 space-y-20 md:space-y-32 relative z-10">
               {/* Watchlist Section */}
               {watchlist.length > 0 && (
-                <motion.section
-                  variants={itemVariants}
-                  className="space-y-8"
-                >
+                <motion.section variants={itemVariants} className="space-y-8">
                   <div className="flex items-end justify-between border-b border-white/5 pb-6">
-                    <div className="space-y-1">
-                      <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter">
-                        <Bookmark className="text-primary w-8 h-8" />
-                        YOUR COLLECTION
-                      </h2>
-                    </div>
+                    <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter">
+                      <Bookmark className="text-primary w-8 h-8" />
+                      YOUR COLLECTION
+                    </h2>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {watchlist.map((movie) => (
@@ -160,7 +167,6 @@ const Index = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.6 }}
                     className="space-y-8"
                   >
                     <div className="flex items-end justify-between border-b border-white/5 pb-6">
@@ -184,21 +190,16 @@ const Index = () => {
               </AnimatePresence>
 
               {/* Main Discovery Section */}
-              <motion.section 
-                variants={itemVariants}
-                className="space-y-8"
-              >
+              <motion.section variants={itemVariants} className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-6 gap-6">
-                  <div className="space-y-1">
-                    <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter uppercase">
-                      {selectedMood || selectedGenre ? (
-                        <Sparkles className="text-primary w-8 h-8" />
-                      ) : (
-                        <TrendingUp className="text-primary w-8 h-8" />
-                      )}
-                      {selectedMood ? selectedMood.replace('-', ' ') : selectedGenre ? selectedGenre : "Trending"}
-                    </h2>
-                  </div>
+                  <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter uppercase">
+                    {selectedMood || selectedGenre ? (
+                      <Sparkles className="text-primary w-8 h-8" />
+                    ) : (
+                      <TrendingUp className="text-primary w-8 h-8" />
+                    )}
+                    {selectedMood ? selectedMood.replace('-', ' ') : selectedGenre ? selectedGenre : "Trending"}
+                  </h2>
                   <div className="w-full md:w-auto">
                     <GenreFilter selected={selectedGenre} onSelect={handleGenreSelect} />
                   </div>
