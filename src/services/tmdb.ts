@@ -44,13 +44,23 @@ export const getMovieDetails = async (id: number): Promise<Movie> => {
   const director = credits.crew?.find((c: any) => c.job === "Director")?.name;
   const cast = credits.cast?.slice(0, 5).map((c: any) => c.name);
   
-  // Try to get US providers first, then fallback to any available region
   const results = providersData.results || {};
-  const regionData = results.US || Object.values(results)[0] as any;
   
+  // 1. Try to find a direct JustWatch link from TMDB (checking US first, then any region)
+  let watchLink = results.US?.link;
+  if (!watchLink) {
+    const anyRegion = Object.values(results).find((r: any) => r.link);
+    if (anyRegion) watchLink = (anyRegion as any).link;
+  }
+
+  // 2. If still no link, generate a high-quality search link
+  if (!watchLink) {
+    watchLink = `https://www.justwatch.com/us/search?q=${encodeURIComponent(details.title)}`;
+  }
+
+  // Get OTT providers for display
+  const regionData = results.US || Object.values(results)[0] as any;
   const ott = regionData?.flatrate || [];
-  // If TMDB doesn't provide a direct link, we create a fallback search link to JustWatch or Google
-  const watchLink = regionData?.link || `https://www.google.com/search?q=watch+${encodeURIComponent(details.title)}+online`;
 
   return {
     ...details,
