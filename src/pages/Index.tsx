@@ -9,6 +9,7 @@ import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import IntroAnimation from "@/components/IntroAnimation";
+import SurpriseMe from "@/components/SurpriseMe";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
 import { TrendingUp, Bookmark, BrainCircuit, Sparkles } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
@@ -220,6 +221,8 @@ const Index = () => {
               onClose={() => setIsDialogOpen(false)}
             />
             
+            <SurpriseMe onSelect={openDetails} />
+
             <MobileNav 
               activeTab={activeTab} 
               onTabChange={setActiveTab} 

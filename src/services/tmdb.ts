@@ -19,7 +19,7 @@ export const MOOD_MAP: Record<string, number[]> = {
   "chill": [35, 99, 16]
 };
 
-export const getImageUrl = (path: string, size: "w92" | "w500" | "original" = "w500") => 
+export const getImageUrl = (path: string, size: "w92" | "w185" | "w500" | "original" = "w500") => 
   path ? `${IMAGE_BASE}/${size}${path}` : "/placeholder.svg";
 
 export const fetchTrending = async (): Promise<Movie[]> => {
@@ -66,10 +66,23 @@ export const getMovieDetails = async (id: number): Promise<Movie> => {
 
   const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube")?.key;
   const director = credits.crew?.find((c: any) => c.job === "Director")?.name;
-  const cast = credits.cast?.slice(0, 5).map((c: any) => c.name);
+  
+  // Enhanced cast with photos
+  const cast = credits.cast?.slice(0, 8).map((c: any) => ({
+    name: c.name,
+    character: c.character,
+    profile_path: c.profile_path
+  }));
   
   const results = providersData.results || {};
-  let watchLink = results.US?.link || Object.values(results).find((r: any) => r.link)?.link;
+  const usProviders = results.US || {};
+  const providers = [
+    ...(usProviders.flatrate || []),
+    ...(usProviders.buy || []),
+    ...(usProviders.rent || [])
+  ].slice(0, 5);
+
+  let watchLink = usProviders.link || Object.values(results).find((r: any) => r.link)?.link;
 
   if (!watchLink) {
     watchLink = `https://www.justwatch.com/us/search?q=${encodeURIComponent(details.title)}`;
@@ -81,7 +94,12 @@ export const getMovieDetails = async (id: number): Promise<Movie> => {
     director,
     cast,
     trailer_key: trailer,
-    watch_link: watchLink
+    watch_link: watchLink,
+    providers: providers.map((p: any) => ({
+      provider_id: p.provider_id,
+      provider_name: p.provider_name,
+      logo_path: p.logo_path
+    }))
   };
 };
 
@@ -93,4 +111,12 @@ export const getRecommendations = async (id: number): Promise<Movie[]> => {
     _reason: "Based on similar themes",
     _score: Math.round(m.vote_average * 10) / 100
   }));
+};
+
+export const getRandomMovie = async (): Promise<Movie> => {
+  const page = Math.floor(Math.random() * 5) + 1;
+  const res = await fetch(`${BASE_URL}/movie/top_rated?api_key=${API_KEY}&page=${page}`);
+  const data = await res.json();
+  const randomIndex = Math.floor(Math.random() * data.results.length);
+  return data.results[randomIndex];
 };

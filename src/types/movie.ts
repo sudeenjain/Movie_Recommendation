@@ -4,6 +4,12 @@ export interface WatchProvider {
   logo_path: string;
 }
 
+export interface CastMember {
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
 export interface Movie {
   id: number;
   title: string;
@@ -16,7 +22,7 @@ export interface Movie {
   runtime?: number;
   tagline?: string;
   director?: string;
-  cast?: string[];
+  cast?: CastMember[];
   trailer_key?: string;
   providers?: WatchProvider[];
   watch_link?: string;

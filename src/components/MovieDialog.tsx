@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Movie } from "@/types/movie";
 import { getMovieDetails, getImageUrl, getRecommendations } from "@/services/tmdb";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Star, Plus, Check, Info, Tv, Users, Film, Play } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Calendar, Clock, Star, Plus, Check, Tv, Users, Film, Play } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { motion } from "framer-motion";
@@ -81,14 +81,31 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                   alt={movie.title}
                 />
                 
+                {details?.providers && details.providers.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Available On</h4>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {details.providers.map((p) => (
+                        <img 
+                          key={p.provider_id} 
+                          src={getImageUrl(p.logo_path, "w92")} 
+                          className="w-8 h-8 rounded-lg shadow-lg border border-white/10"
+                          title={p.provider_name}
+                          alt={p.provider_name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {details?.watch_link && (
                   <Button 
-                    className="w-full mt-4 gap-2 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20" 
+                    className="w-full mt-6 gap-2 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20" 
                     asChild
                   >
                     <a href={details.watch_link} target="_blank" rel="noopener noreferrer">
                       <Tv className="w-4 h-4" />
-                      Watch Full Movie
+                      Watch Now
                     </a>
                   </Button>
                 )}
@@ -145,17 +162,28 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                 </div>
 
                 {details?.cast && details.cast.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <h4 className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                      <Users className="w-4 h-4" /> Starring
+                      <Users className="w-4 h-4" /> Top Cast
                     </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {details.cast.map((name) => (
-                        <span key={name} className="text-xs bg-white/5 px-3 py-1 rounded-full text-white/80">
-                          {name}
-                        </span>
-                      ))}
-                    </div>
+                    <ScrollArea className="w-full whitespace-nowrap pb-4">
+                      <div className="flex gap-4">
+                        {details.cast.map((person) => (
+                          <div key={person.name} className="w-24 shrink-0 space-y-2">
+                            <img 
+                              src={getImageUrl(person.profile_path, "w185")} 
+                              className="w-24 h-24 object-cover rounded-full border-2 border-white/5 shadow-xl"
+                              alt={person.name}
+                            />
+                            <div className="text-center">
+                              <p className="text-[10px] font-bold text-white truncate">{person.name}</p>
+                              <p className="text-[8px] text-muted-foreground truncate">{person.character}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
                   </div>
                 )}
 
@@ -178,17 +206,6 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {details?.watch_link && (
-                  <div className="md:hidden pt-4">
-                    <Button className="w-full gap-2 font-bold bg-primary" asChild>
-                      <a href={details.watch_link} target="_blank" rel="noopener noreferrer">
-                        <Tv className="w-4 h-4" />
-                        Watch Full Movie
-                      </a>
-                    </Button>
                   </div>
                 )}
               </div>
