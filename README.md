@@ -1,5 +1,5 @@
 # 🎬 CINEAI – Smart Movie Recommendation System
-cineai-preview.png
+![CINEAI Preview](cineai-preview.png)
 CINEAI is an AI-powered movie recommendation web application designed to provide personalized movie suggestions using intelligent filtering techniques and real-time movie data.
 
 ## 🚀 Features
