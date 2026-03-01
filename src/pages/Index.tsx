@@ -9,7 +9,7 @@ import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
-import { Sparkles, TrendingUp, Bookmark, BrainCircuit } from "lucide-react";
+import { TrendingUp, Bookmark, BrainCircuit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 
@@ -64,10 +64,6 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 text-center space-y-6 max-w-4xl"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md text-primary text-xs md:text-sm font-bold mb-4">
-            <Sparkles className="w-4 h-4" />
-            Next-Gen Movie Discovery
-          </div>
           <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white">
             CINE<span className="text-primary">AI</span>
           </h1>
