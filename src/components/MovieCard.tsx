@@ -4,8 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Movie } from "@/types/movie";
 import { getImageUrl, getMovieTrailer, getMovieDetails } from "@/services/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Volume2, VolumeX, Tv, Film, PlayCircle } from "lucide-react";
+import { Star, Volume2, VolumeX, Tv, PlayCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface MovieCardProps {
   movie: Movie;
@@ -20,9 +22,10 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
   const [showTrailer, setShowTrailer] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (isHovered) {
+    if (isHovered && !isMobile) {
       setIsLoading(true);
       hoverTimerRef.current = setTimeout(async () => {
         try {
@@ -54,29 +57,30 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
     return () => {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
-  }, [isHovered, movie.id, trailerKey, watchLink]);
+  }, [isHovered, movie.id, trailerKey, watchLink, isMobile]);
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -8 }}
+      whileHover={!isMobile ? { scale: 1.02, y: -8 } : {}}
+      whileTap={{ scale: 0.98 }}
       className="relative group cursor-pointer rounded-2xl overflow-hidden bg-card shadow-2xl transition-all duration-500"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => !isMobile && setIsHovered(true)}
+      onMouseLeave={() => !isMobile && setIsHovered(false)}
       onClick={() => onClick(movie)}
     >
       <div className="aspect-[2/3] relative overflow-hidden bg-neutral-900">
-        {/* Poster Image (Always present as background) */}
         <motion.img
           src={getImageUrl(movie.poster_path)}
           alt={movie.title}
-          className={`w-full h-full object-cover transition-all duration-700 ${
-            showTrailer ? "scale-110 blur-sm opacity-40" : "group-hover:scale-105"
-          }`}
+          className={cn(
+            "w-full h-full object-cover transition-all duration-700",
+            showTrailer ? "scale-110 blur-sm opacity-40" : "group-hover:scale-105",
+            isMobile && "opacity-60"
+          )}
         />
 
-        {/* Trailer Preview Layer */}
         <AnimatePresence>
-          {showTrailer && trailerKey && (
+          {showTrailer && trailerKey && !isMobile && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -92,7 +96,6 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
                 />
               </div>
               
-              {/* Mute Toggle */}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -103,7 +106,6 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
                 {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
               </button>
 
-              {/* Live Indicator */}
               <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2 py-1 bg-red-600/90 backdrop-blur-md rounded-md border border-red-500/50">
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 <span className="text-[8px] font-black text-white uppercase tracking-widest">Preview</span>
@@ -112,61 +114,51 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
           )}
         </AnimatePresence>
 
-        {/* Loading State */}
         {isLoading && !showTrailer && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         )}
 
-        {/* Overlay UI */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-5 z-20">
-          <div className="flex items-center gap-2 mb-3">
-            <Badge className="bg-primary text-primary-foreground border-none font-black px-2 py-0.5 text-[10px]">
-              <Star className="w-3 h-3 fill-current mr-1" />
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent transition-all duration-500 flex flex-col justify-end p-4 z-20",
+          isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge className="bg-primary text-primary-foreground border-none font-black px-2 py-0.5 text-[9px]">
+              <Star className="w-2.5 h-2.5 fill-current mr-1" />
               {movie.vote_average.toFixed(1)}
             </Badge>
             {movie.release_date && (
-              <span className="text-[10px] text-white/80 font-bold tracking-wider">{movie.release_date.split("-")[0]}</span>
+              <span className="text-[9px] text-white/80 font-bold tracking-wider">{movie.release_date.split("-")[0]}</span>
             )}
           </div>
           
-          <h3 className="text-white font-black text-base line-clamp-2 mb-5 leading-tight uppercase tracking-tighter group-hover:translate-y-0 translate-y-2 transition-transform duration-500">
+          <h3 className="text-white font-black text-sm line-clamp-2 mb-4 leading-tight uppercase tracking-tighter">
             {movie.title}
           </h3>
           
-          <div className="flex flex-col gap-2 group-hover:translate-y-0 translate-y-4 transition-transform duration-500 delay-75">
+          <div className="flex flex-col gap-2">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 onClick(movie);
               }}
-              className="w-full py-3 bg-white/10 hover:bg-white/20 backdrop-blur-2xl text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-white/10 uppercase tracking-widest"
+              className="w-full py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-2xl text-white rounded-xl text-[9px] font-black flex items-center justify-center gap-2 transition-all border border-white/10 uppercase tracking-widest active:scale-95"
             >
-              <PlayCircle className="w-4 h-4 text-primary" />
-              Details & Trailer
+              <PlayCircle className="w-3.5 h-3.5 text-primary" />
+              Details
             </button>
-            
-            {watchLink && (
-              <a 
-                href={watchLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-primary/20 uppercase tracking-widest"
-              >
-                <Tv className="w-4 h-4" />
-                Watch Now
-              </a>
-            )}
           </div>
         </div>
       </div>
       
-      {/* AI Match Badge */}
       {movie._reason && (
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 z-30 scale-90 group-hover:scale-100">
-          <Badge className="bg-blue-600/90 backdrop-blur-md text-[9px] font-black border-none shadow-xl px-3 py-1">AI MATCH</Badge>
+        <div className={cn(
+          "absolute top-3 right-3 z-30 transition-all duration-500",
+          isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}>
+          <Badge className="bg-blue-600/90 backdrop-blur-md text-[8px] font-black border-none shadow-xl px-2 py-0.5">AI MATCH</Badge>
         </div>
       )}
     </motion.div>
