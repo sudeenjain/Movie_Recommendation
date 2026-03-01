@@ -1,4 +1,4 @@
-const API_KEY = "8265bd1679663a7ea12ac168da84d2e8"; 
+const API_KEY = "3e6de8a45463ba8310359da2d236c60e"; 
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -15,6 +15,16 @@ export const searchMovies = async (query: string): Promise<Movie[]> => {
   const res = await fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
   const data = await res.json();
   return data.results;
+};
+
+export const getMovieTrailer = async (id: number): Promise<string | null> => {
+  try {
+    const res = await fetch(`${BASE_URL}/movie/${id}/videos?api_key=${API_KEY}`);
+    const data = await res.json();
+    return data.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube")?.key || null;
+  } catch (error) {
+    return null;
+  }
 };
 
 export const getMovieDetails = async (id: number): Promise<Movie> => {
