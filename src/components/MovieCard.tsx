@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
-import { getImageUrl, getMovieTrailer } from "@/services/tmdb";
+import { getImageUrl, getMovieTrailer, getMovieDetails } from "@/services/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Play, Volume2, VolumeX } from "lucide-react";
+import { Star, Play, Volume2, VolumeX, Tv } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface MovieCardProps {
@@ -13,6 +13,7 @@ interface MovieCardProps {
 const MovieCard = ({ movie, onClick }: MovieCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [watchLink, setWatchLink] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
 
@@ -20,17 +21,20 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
     let timer: NodeJS.Timeout;
     if (isHovered) {
       timer = setTimeout(async () => {
-        if (!trailerKey) {
-          const key = await getMovieTrailer(movie.id);
-          setTrailerKey(key);
-        }
+        const [key, details] = await Promise.all([
+          trailerKey ? Promise.resolve(trailerKey) : getMovieTrailer(movie.id),
+          watchLink ? Promise.resolve({ watch_link: watchLink }) : getMovieDetails(movie.id)
+        ]);
+        
+        setTrailerKey(key);
+        if (details.watch_link) setWatchLink(details.watch_link);
         setShowTrailer(true);
-      }, 800); // Delay to prevent accidental triggers while scrolling
+      }, 800);
     } else {
       setShowTrailer(false);
     }
     return () => clearTimeout(timer);
-  }, [isHovered, movie.id, trailerKey]);
+  }, [isHovered, movie.id, trailerKey, watchLink]);
 
   return (
     <motion.div
@@ -77,26 +81,47 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
           )}
         </AnimatePresence>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 z-20">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 z-20">
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant="secondary" className="bg-yellow-500 text-black border-none">
+            <Badge variant="secondary" className="bg-primary text-primary-foreground border-none font-bold">
               <Star className="w-3 h-3 fill-current mr-1" />
               {movie.vote_average.toFixed(1)}
             </Badge>
             {movie.release_date && (
-              <span className="text-xs text-white/80">{movie.release_date.split("-")[0]}</span>
+              <span className="text-xs text-white/80 font-medium">{movie.release_date.split("-")[0]}</span>
             )}
           </div>
-          <h3 className="text-white font-bold text-sm line-clamp-2 mb-2">{movie.title}</h3>
-          <button className="w-full py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center gap-2">
-            <Play className="w-3 h-3 fill-current" />
-            Details
-          </button>
+          <h3 className="text-white font-bold text-sm line-clamp-2 mb-3">{movie.title}</h3>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick(movie);
+              }}
+              className="py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Play className="w-3 h-3 fill-current" />
+              DETAILS
+            </button>
+            {watchLink && (
+              <a 
+                href={watchLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-primary/20"
+              >
+                <Tv className="w-3 h-3" />
+                WATCH
+              </a>
+            )}
+          </div>
         </div>
       </div>
       {movie._reason && (
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-          <Badge className="bg-blue-600/90 backdrop-blur-sm text-[10px]">AI Match</Badge>
+          <Badge className="bg-blue-600/90 backdrop-blur-sm text-[10px] font-bold">AI MATCH</Badge>
         </div>
       )}
     </motion.div>
