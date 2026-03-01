@@ -80,11 +80,13 @@ const Index = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 text-center space-y-6 max-w-4xl"
+          className="relative z-10 text-center space-y-6 max-w-4xl flex flex-col items-center"
         >
-          <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white">
-            CINE<span className="text-primary">AI</span>
-          </h1>
+          <img 
+            src="/logo.png" 
+            alt="CINEAI Logo" 
+            className="w-48 md:w-80 h-auto drop-shadow-[0_0_30px_rgba(0,150,255,0.3)]"
+          />
           
           <div className="pt-4 md:pt-8 w-full max-w-2xl mx-auto">
             <SearchBar onSelect={handleMovieSelect} />
