@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
 import { getImageUrl, getMovieTrailer, getMovieDetails } from "@/services/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Play, Volume2, VolumeX, Tv } from "lucide-react";
+import { Star, Play, Volume2, VolumeX, Tv, Film } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface MovieCardProps {
@@ -93,7 +93,7 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
           </div>
           <h3 className="text-white font-bold text-sm line-clamp-2 mb-3">{movie.title}</h3>
           
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -101,8 +101,8 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
               }}
               className="py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors"
             >
-              <Play className="w-3 h-3 fill-current" />
-              DETAILS
+              <Film className="w-3 h-3" />
+              WATCH TRAILER & INFO
             </button>
             {watchLink && (
               <a 
@@ -113,7 +113,7 @@ const MovieCard = ({ movie, onClick }: MovieCardProps) => {
                 className="py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-primary/20"
               >
                 <Tv className="w-3 h-3" />
-                WATCH
+                WATCH FULL MOVIE
               </a>
             )}
           </div>
