@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface IntroAnimationProps {
@@ -10,39 +10,13 @@ interface IntroAnimationProps {
 const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const letters = "CINEAI".split("");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Initialize audio
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2436/2436-preview.mp3");
-    audio.volume = 0.4;
-    audioRef.current = audio;
-
-    // Play sound when the component mounts
-    // Note: Browsers may block autoplay until user interaction, 
-    // but we'll attempt it for the cinematic experience.
-    const playSound = async () => {
-      try {
-        await audio.play();
-      } catch (err) {
-        console.log("Autoplay sound blocked by browser");
-      }
-    };
-
-    playSound();
-
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onComplete, 1000); // Wait for exit animation
     }, 3500);
-
-    return () => {
-      clearTimeout(timer);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
+    return () => clearTimeout(timer);
   }, [onComplete]);
 
   const containerVariants = {
