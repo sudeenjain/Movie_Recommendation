@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Movie } from "@/types/movie";
 import { getMovieDetails, getImageUrl } from "@/services/tmdb";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Star, User, Play, Info } from "lucide-react";
+import { Calendar, Clock, Star, Play, Info, Plus, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { useWatchlist } from "@/hooks/use-watchlist";
 
 interface MovieDialogProps {
   movie: Movie | null;
@@ -15,6 +17,7 @@ interface MovieDialogProps {
 const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
   const [details, setDetails] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(false);
+  const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
   useEffect(() => {
     if (movie && isOpen) {
@@ -27,6 +30,8 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
   }, [movie, isOpen]);
 
   if (!movie) return null;
+
+  const inWatchlist = isInWatchlist(movie.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -61,28 +66,38 @@ const MovieDialog = ({ movie, isOpen, onClose }: MovieDialogProps) => {
               </div>
 
               <div className="flex-1 space-y-6">
-                <div>
-                  <DialogHeader>
-                    <DialogTitle className="text-4xl font-black tracking-tight mb-2">
-                      {movie.title}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="flex flex-wrap gap-3 items-center text-sm text-muted-foreground">
-                    <Badge variant="outline" className="flex gap-1 items-center">
-                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                      {movie.vote_average.toFixed(1)}
-                    </Badge>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {movie.release_date?.split("-")[0]}
-                    </span>
-                    {details?.runtime && (
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <DialogHeader>
+                      <DialogTitle className="text-4xl font-black tracking-tight mb-2">
+                        {movie.title}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-wrap gap-3 items-center text-sm text-muted-foreground">
+                      <Badge variant="outline" className="flex gap-1 items-center">
+                        <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                        {movie.vote_average.toFixed(1)}
+                      </Badge>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {details.runtime} min
+                        <Calendar className="w-3 h-3" />
+                        {movie.release_date?.split("-")[0]}
                       </span>
-                    )}
+                      {details?.runtime && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {details.runtime} min
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <Button
+                    variant={inWatchlist ? "secondary" : "default"}
+                    size="icon"
+                    className="rounded-full shrink-0"
+                    onClick={() => toggleWatchlist(movie)}
+                  >
+                    {inWatchlist ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                  </Button>
                 </div>
 
                 <div className="flex flex-wrap gap-2">

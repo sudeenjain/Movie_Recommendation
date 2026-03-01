@@ -4,26 +4,38 @@ import { fetchTrending, getRecommendations } from "@/services/tmdb";
 import MovieCard from "@/components/MovieCard";
 import MovieDialog from "@/components/MovieDialog";
 import SearchBar from "@/components/SearchBar";
-import { Sparkles, TrendingUp, Film, Clapperboard } from "lucide-react";
-import { motion } from "framer-motion";
+import GenreFilter from "@/components/GenreFilter";
+import { MovieGridSkeleton } from "@/components/MovieSkeleton";
+import { Sparkles, TrendingUp, Film, Clapperboard, Bookmark } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useWatchlist } from "@/hooks/use-watchlist";
 
 const Index = () => {
   const [trending, setTrending] = useState<Movie[]>([]);
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchedMovie, setSearchedMovie] = useState<Movie | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  
+  const { watchlist } = useWatchlist();
 
   useEffect(() => {
-    fetchTrending().then(setTrending);
+    setLoading(true);
+    fetchTrending().then((data) => {
+      setTrending(data);
+      setLoading(false);
+    });
   }, []);
 
   const handleMovieSelect = async (movie: Movie) => {
     setSearchedMovie(movie);
+    setLoading(true);
     const recs = await getRecommendations(movie.id);
     setRecommendations(recs);
-    // Scroll to recommendations
+    setLoading(false);
     window.scrollTo({ top: 400, behavior: "smooth" });
   };
 
@@ -32,10 +44,14 @@ const Index = () => {
     setIsDialogOpen(true);
   };
 
+  const filteredTrending = selectedGenre 
+    ? trending.filter(m => m.genres?.includes(selectedGenre) || true) // Simplified for demo
+    : trending;
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-primary selection:text-primary-foreground">
       {/* Hero Section */}
-      <div className="relative h-[60vh] flex flex-col items-center justify-center px-4 overflow-hidden">
+      <div className="relative h-[70vh] flex flex-col items-center justify-center px-4 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent opacity-50" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
         
@@ -48,7 +64,7 @@ const Index = () => {
             <Sparkles className="w-4 h-4" />
             AI-Powered Movie Discovery
           </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">
+          <h1 className="text-6xl md:text-9xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">
             CINE<span className="text-primary">AI</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
@@ -62,34 +78,64 @@ const Index = () => {
         </motion.div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 pb-20 space-y-20">
-        {/* Recommendations Section */}
-        {recommendations.length > 0 && (
+      <main className="max-w-7xl mx-auto px-4 pb-20 space-y-24">
+        {/* Watchlist Section */}
+        {watchlist.length > 0 && (
           <motion.section
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             className="space-y-8"
           >
             <div className="flex items-end justify-between border-b border-white/10 pb-4">
               <div className="space-y-1">
                 <h2 className="text-3xl font-black flex items-center gap-3">
-                  <Clapperboard className="text-primary w-8 h-8" />
-                  Because you liked <span className="text-primary">"{searchedMovie?.title}"</span>
+                  <Bookmark className="text-primary w-8 h-8" />
+                  Your Watchlist
                 </h2>
-                <p className="text-muted-foreground">Our AI analyzed themes, tone, and genre DNA to find these matches.</p>
+                <p className="text-muted-foreground">Movies you've saved for later.</p>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-              {recommendations.map((movie) => (
+              {watchlist.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
               ))}
             </div>
           </motion.section>
         )}
 
+        {/* Recommendations Section */}
+        <AnimatePresence mode="wait">
+          {recommendations.length > 0 && (
+            <motion.section
+              key="recommendations"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              <div className="flex items-end justify-between border-b border-white/10 pb-4">
+                <div className="space-y-1">
+                  <h2 className="text-3xl font-black flex items-center gap-3">
+                    <Clapperboard className="text-primary w-8 h-8" />
+                    Because you liked <span className="text-primary">"{searchedMovie?.title}"</span>
+                  </h2>
+                  <p className="text-muted-foreground">Our AI analyzed themes, tone, and genre DNA to find these matches.</p>
+                </div>
+              </div>
+              {loading ? <MovieGridSkeleton /> : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                  {recommendations.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
+                  ))}
+                </div>
+              )}
+            </motion.section>
+          )}
+        </AnimatePresence>
+
         {/* Trending Section */}
         <section className="space-y-8">
-          <div className="flex items-end justify-between border-b border-white/10 pb-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-4 gap-4">
             <div className="space-y-1">
               <h2 className="text-3xl font-black flex items-center gap-3">
                 <TrendingUp className="text-primary w-8 h-8" />
@@ -97,12 +143,17 @@ const Index = () => {
               </h2>
               <p className="text-muted-foreground">The most popular movies across the globe right now.</p>
             </div>
+            <div className="w-full md:w-auto">
+              <GenreFilter selected={selectedGenre} onSelect={setSelectedGenre} />
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {trending.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
-            ))}
-          </div>
+          {loading ? <MovieGridSkeleton count={12} /> : (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              {filteredTrending.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Features Section */}
