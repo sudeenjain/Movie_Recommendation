@@ -7,10 +7,10 @@ import SearchBar from "@/components/SearchBar";
 import GenreFilter from "@/components/GenreFilter";
 import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
+import Footer from "@/components/Footer";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
 import { Sparkles, TrendingUp, Bookmark, BrainCircuit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { useWatchlist } from "@/hooks/use-watchlist";
 
 const Index = () => {
@@ -172,9 +172,7 @@ const Index = () => {
         watchlistCount={watchlist.length} 
       />
 
-      <footer className="border-t border-border py-10 hidden md:block">
-        <MadeWithDyad />
-      </footer>
+      <Footer />
     </div>
   );
 };
