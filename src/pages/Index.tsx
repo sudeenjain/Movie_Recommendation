@@ -45,26 +45,25 @@ const Index = () => {
   };
 
   const filteredTrending = selectedGenre 
-    ? trending.filter(m => m.genres?.includes(selectedGenre) || true) // Simplified for demo
+    ? trending.filter(m => m.genres?.includes(selectedGenre) || true) 
     : trending;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-primary selection:text-primary-foreground">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       {/* Hero Section */}
       <div className="relative h-[70vh] flex flex-col items-center justify-center px-4 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent opacity-50" />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 text-center space-y-6 max-w-4xl"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-primary text-sm font-bold mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md text-primary text-sm font-bold mb-4">
             <Sparkles className="w-4 h-4" />
             AI-Powered Movie Discovery
           </div>
-          <h1 className="text-6xl md:text-9xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">
+          <h1 className="text-6xl md:text-9xl font-black tracking-tighter text-white">
             CINE<span className="text-primary">AI</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
@@ -86,9 +85,9 @@ const Index = () => {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-8"
           >
-            <div className="flex items-end justify-between border-b border-white/10 pb-4">
+            <div className="flex items-end justify-between border-b border-border pb-4">
               <div className="space-y-1">
-                <h2 className="text-3xl font-black flex items-center gap-3">
+                <h2 className="text-3xl font-black flex items-center gap-3 text-white">
                   <Bookmark className="text-primary w-8 h-8" />
                   Your Watchlist
                 </h2>
@@ -113,9 +112,9 @@ const Index = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              <div className="flex items-end justify-between border-b border-white/10 pb-4">
+              <div className="flex items-end justify-between border-b border-border pb-4">
                 <div className="space-y-1">
-                  <h2 className="text-3xl font-black flex items-center gap-3">
+                  <h2 className="text-3xl font-black flex items-center gap-3 text-white">
                     <Clapperboard className="text-primary w-8 h-8" />
                     Because you liked <span className="text-primary">"{searchedMovie?.title}"</span>
                   </h2>
@@ -135,9 +134,9 @@ const Index = () => {
 
         {/* Trending Section */}
         <section className="space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-4 gap-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-border pb-4 gap-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-black flex items-center gap-3">
+              <h2 className="text-3xl font-black flex items-center gap-3 text-white">
                 <TrendingUp className="text-primary w-8 h-8" />
                 Trending Today
               </h2>
@@ -163,9 +162,9 @@ const Index = () => {
             { icon: Film, title: "Rich Metadata", desc: "Trailers, cast details, and where to watch on OTT platforms." },
             { icon: Clapperboard, title: "AI Insights", desc: "Understand exactly why a movie was recommended for you." }
           ].map((feature, i) => (
-            <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group">
+            <div key={i} className="p-8 rounded-3xl bg-card border border-border hover:bg-accent transition-colors group">
               <feature.icon className="w-10 h-10 text-primary mb-4 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+              <h3 className="text-xl font-bold mb-2 text-white">{feature.title}</h3>
               <p className="text-muted-foreground">{feature.desc}</p>
             </div>
           ))}
@@ -178,7 +177,7 @@ const Index = () => {
         onClose={() => setIsDialogOpen(false)}
       />
       
-      <footer className="border-t border-white/10 py-10">
+      <footer className="border-t border-border py-10">
         <MadeWithDyad />
       </footer>
     </div>
