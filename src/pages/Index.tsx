@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Movie } from "@/types/movie";
-import { fetchTrending, getRecommendations } from "@/services/tmdb";
+import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP } from "@/services/tmdb";
 import MovieCard from "@/components/MovieCard";
 import MovieDialog from "@/components/MovieDialog";
 import SearchBar from "@/components/SearchBar";
@@ -9,12 +9,12 @@ import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
-import { TrendingUp, Bookmark, BrainCircuit } from "lucide-react";
+import { TrendingUp, Bookmark, BrainCircuit, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 
 const Index = () => {
-  const [trending, setTrending] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -26,13 +26,26 @@ const Index = () => {
   
   const { watchlist } = useWatchlist();
 
+  // Handle initial load and filters
   useEffect(() => {
-    setLoading(true);
-    fetchTrending().then((data) => {
-      setTrending(data);
+    const loadMovies = async () => {
+      setLoading(true);
+      let data: Movie[] = [];
+      
+      if (selectedMood) {
+        data = await discoverMovies(MOOD_MAP[selectedMood]);
+      } else if (selectedGenre) {
+        data = await discoverMovies([GENRE_MAP[selectedGenre]]);
+      } else {
+        data = await fetchTrending();
+      }
+      
+      setMovies(data);
       setLoading(false);
-    });
-  }, []);
+    };
+
+    loadMovies();
+  }, [selectedGenre, selectedMood]);
 
   const handleMovieSelect = async (movie: Movie) => {
     setSearchedMovie(movie);
@@ -48,10 +61,15 @@ const Index = () => {
     setIsDialogOpen(true);
   };
 
-  const filteredTrending = trending.filter(m => {
-    const genreMatch = !selectedGenre || true; // Simplified for now
-    return genreMatch;
-  });
+  const handleMoodSelect = (mood: string | null) => {
+    setSelectedMood(mood);
+    setSelectedGenre(null); // Clear genre when mood is selected
+  };
+
+  const handleGenreSelect = (genre: string | null) => {
+    setSelectedGenre(genre);
+    setSelectedMood(null); // Clear mood when genre is selected
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground pb-24 md:pb-0">
@@ -74,7 +92,7 @@ const Index = () => {
 
           <div className="pt-6">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Or discover by vibe</p>
-            <MoodFilter selected={selectedMood} onSelect={setSelectedMood} />
+            <MoodFilter selected={selectedMood} onSelect={handleMoodSelect} />
           </div>
         </motion.div>
       </div>
@@ -133,22 +151,26 @@ const Index = () => {
           )}
         </AnimatePresence>
 
-        {/* Trending Section */}
+        {/* Main Discovery Section */}
         <section className="space-y-6 md:space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-border pb-4 gap-4">
             <div className="space-y-1">
               <h2 className="text-2xl md:text-3xl font-black flex items-center gap-3 text-white">
-                <TrendingUp className="text-primary w-6 h-6 md:w-8 md:h-8" />
-                Trending Now
+                {selectedMood || selectedGenre ? (
+                  <Sparkles className="text-primary w-6 h-6 md:w-8 md:h-8" />
+                ) : (
+                  <TrendingUp className="text-primary w-6 h-6 md:w-8 md:h-8" />
+                )}
+                {selectedMood ? `${selectedMood.replace('-', ' ')} Movies` : selectedGenre ? `${selectedGenre} Movies` : "Trending Now"}
               </h2>
             </div>
             <div className="w-full md:w-auto overflow-x-auto">
-              <GenreFilter selected={selectedGenre} onSelect={setSelectedGenre} />
+              <GenreFilter selected={selectedGenre} onSelect={handleGenreSelect} />
             </div>
           </div>
           {loading ? <MovieGridSkeleton count={12} /> : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-              {filteredTrending.map((movie) => (
+              {movies.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
               ))}
             </div>
