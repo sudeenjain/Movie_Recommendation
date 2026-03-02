@@ -10,11 +10,12 @@ import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import IntroAnimation from "@/components/IntroAnimation";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
-import { TrendingUp, Bookmark, BrainCircuit, Sparkles, User } from "lucide-react";
+import { TrendingUp, Bookmark, BrainCircuit, Sparkles, User, Home, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -47,7 +48,7 @@ const Index = () => {
   const handleMovieSelect = async (movie: Movie) => {
     setSearchedMovie(movie);
     setSelectedMovie(movie);
-    setIsDialogOpen(true); // Immediately show details and trailer
+    setIsDialogOpen(true);
     
     setLoading(true);
     const recs = await getRecommendations(movie.id);
@@ -61,6 +62,12 @@ const Index = () => {
     setSelectedMovie(movie);
     setIsDialogOpen(true);
   };
+
+  const navItems = [
+    { id: "home", icon: Home, label: "Home" },
+    { id: "ai", icon: Sparkles, label: "AI Discovery" },
+    { id: "watchlist", icon: Bookmark, label: "Saved", count: watchlist.length },
+  ];
 
   return (
     <div className="min-h-screen text-foreground selection:bg-primary selection:text-primary-foreground pb-32 md:pb-0 overflow-x-hidden">
@@ -76,26 +83,54 @@ const Index = () => {
             <motion.nav 
               initial={{ y: -100 }}
               animate={{ y: 0 }}
-              className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center bg-gradient-to-b from-black/90 via-black/40 to-transparent backdrop-blur-[2px]"
+              className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center bg-gradient-to-b from-black/90 via-black/40 to-transparent backdrop-blur-md"
             >
-              <motion.h3 
-                whileHover={{ scale: 1.05 }}
-                className="text-2xl font-black tracking-tighter text-white cursor-default"
-              >
-                CINE<span className="text-primary">AI</span>
-              </motion.h3>
-              <Link to="/profile">
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-primary/20 hover:border-primary/50 transition-all shadow-xl"
+              <div className="flex items-center gap-12">
+                <motion.h3 
+                  onClick={() => setActiveTab("home")}
+                  whileHover={{ scale: 1.05 }}
+                  className="text-2xl font-black tracking-tighter text-white cursor-pointer"
                 >
-                  <User className="w-5 h-5" />
-                </motion.button>
-              </Link>
+                  CINE<span className="text-primary">AI</span>
+                </motion.h3>
+
+                {/* Desktop Nav */}
+                <div className="hidden md:flex items-center gap-8">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={cn(
+                        "flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:text-primary",
+                        activeTab === item.id ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.label}
+                      {item.count !== undefined && item.count > 0 && (
+                        <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded-md text-[8px]">
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Link to="/profile">
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-primary/20 hover:border-primary/50 transition-all shadow-xl"
+                  >
+                    <User className="w-5 h-5" />
+                  </motion.button>
+                </Link>
+              </div>
             </motion.nav>
 
-            {(activeTab === "home" || activeTab === "search" || activeTab === "ai") && (
+            {(activeTab === "home" || activeTab === "ai") && (
               <div className="relative min-h-[60vh] md:h-[80vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-24 md:pt-0 z-10">
                 <motion.div 
                   animate={{ y: [0, -20, 0] }}
