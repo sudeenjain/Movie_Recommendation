@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Movie } from "@/types/movie";
 import { getImageUrl, getMovieTrailer, getMovieDetails } from "@/services/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Volume2, VolumeX, PlayCircle } from "lucide-react";
+import { Star, Volume2, VolumeX, PlayCircle, Bookmark, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useWatchlist } from "@/hooks/use-watchlist";
 import { cn } from "@/lib/utils";
 
 interface MovieCardProps {
@@ -24,6 +25,9 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
+  const { toggleWatchlist, isInWatchlist } = useWatchlist();
+
+  const inWatchlist = isInWatchlist(movie.id);
 
   useEffect(() => {
     if (isHovered && !isMobile) {
@@ -53,6 +57,11 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
     return () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); };
   }, [isHovered, movie.id, trailerKey, watchLink, isMobile]);
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleWatchlist(movie);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -77,6 +86,20 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
           )}
         />
 
+        {/* Quick Save Button */}
+        <button
+          onClick={handleSave}
+          className={cn(
+            "absolute top-3 right-3 z-30 p-2.5 rounded-xl backdrop-blur-xl border transition-all duration-300",
+            inWatchlist 
+              ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
+              : "bg-black/40 border-white/10 text-white hover:bg-white/20",
+            !isMobile && "opacity-0 group-hover:opacity-100"
+          )}
+        >
+          {inWatchlist ? <Check className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+        </button>
+
         <AnimatePresence>
           {showTrailer && trailerKey && !isMobile && (
             <motion.div
@@ -99,7 +122,7 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
                   e.stopPropagation();
                   setIsMuted(!isMuted);
                 }}
-                className="absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur-xl rounded-full hover:bg-primary transition-all border border-white/10"
+                className="absolute top-3 left-3 z-30 p-2 bg-black/60 backdrop-blur-xl rounded-full hover:bg-primary transition-all border border-white/10"
               >
                 {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
               </button>
