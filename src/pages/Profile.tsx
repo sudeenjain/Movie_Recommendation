@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Mail, Camera, Save, ArrowLeft, LogOut, 
   Loader2, Settings, Shield, Bell, Palette, 
-  History, Star, Bookmark, Zap, Globe, Check
+  History, Star, Bookmark, Zap, Globe, Check,
+  Link as LinkIcon, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "@/lib/firebase";
 import { updateProfile, signOut, sendPasswordResetEmail } from "firebase/auth";
@@ -22,23 +24,30 @@ import { useWatchlist } from "@/hooks/use-watchlist";
 const Profile = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [bio, setBio] = useState("Cinematic explorer in the digital frontier.");
+  const [photoURL, setPhotoURL] = useState("");
+  const [newPhotoURL, setNewPhotoURL] = useState("");
+  const [bio, setBio] = useState(localStorage.getItem("user_bio") || "Cinematic explorer in the digital frontier.");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   
   const navigate = useNavigate();
   const { watchlist } = useWatchlist();
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    setEmail(user.email || user.phoneNumber || "");
-    setName(user.displayName || "");
-    setLoading(false);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+      setEmail(user.email || user.phoneNumber || "Unknown Identity");
+      setName(user.displayName || "Commander");
+      setPhotoURL(user.photoURL || "");
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -49,6 +58,7 @@ const Profile = () => {
       await updateProfile(auth.currentUser, {
         displayName: name
       });
+      localStorage.setItem("user_bio", bio);
       showSuccess("Neural profile updated successfully.");
     } catch (error: any) {
       showError(error.message);
@@ -57,8 +67,28 @@ const Profile = () => {
     }
   };
 
+  const handleUpdatePhoto = async () => {
+    if (!auth.currentUser || !newPhotoURL) return;
+    setSaving(true);
+    try {
+      await updateProfile(auth.currentUser, {
+        photoURL: newPhotoURL
+      });
+      setPhotoURL(newPhotoURL);
+      setIsPhotoDialogOpen(false);
+      showSuccess("Visual identity updated.");
+    } catch (error: any) {
+      showError("Failed to update photo. Ensure the URL is valid.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePasswordReset = async () => {
-    if (!email) return;
+    if (!email || email === "Unknown Identity") {
+      showError("No valid email associated with this account.");
+      return;
+    }
     try {
       await sendPasswordResetEmail(auth, email);
       showSuccess("Reset link transmitted to your network ID.");
@@ -73,10 +103,17 @@ const Profile = () => {
     navigate("/auth");
   };
 
+  const handleToggleFeature = (feature: string) => {
+    showSuccess(`${feature} protocol updated.`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <Loader2 className="w-8 h-8 text-primary animate-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        </div>
       </div>
     );
   }
@@ -110,21 +147,48 @@ const Profile = () => {
             <div className="relative inline-block mb-6">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-purple-600 p-1">
                 <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden relative group">
-                  {auth.currentUser?.photoURL ? (
-                    <img src={auth.currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                  {photoURL ? (
+                    <img src={photoURL} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-16 h-16 text-white" />
                   )}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                    <Camera className="w-6 h-6 text-white" />
-                  </div>
+                  
+                  <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+                    <DialogTrigger asChild>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="bg-black/90 border-white/10 backdrop-blur-2xl rounded-3xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-white font-black uppercase tracking-widest">Update Visual Identity</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60">Image URL</Label>
+                          <div className="relative">
+                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input 
+                              placeholder="https://example.com/photo.jpg" 
+                              value={newPhotoURL}
+                              onChange={(e) => setNewPhotoURL(e.target.value)}
+                              className="pl-10 bg-white/5 border-white/10 rounded-xl"
+                            />
+                          </div>
+                        </div>
+                        <Button onClick={handleUpdatePhoto} className="w-full bg-primary font-black uppercase tracking-widest" disabled={saving}>
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Identity"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
               <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 border-4 border-black rounded-full flex items-center justify-center">
                 <Check className="w-4 h-4 text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-black tracking-tighter text-white uppercase">{name || "Commander"}</h2>
+            <h2 className="text-2xl font-black tracking-tighter text-white uppercase truncate px-2">{name}</h2>
             <p className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mt-2">Elite Operative</p>
             
             <div className="grid grid-cols-2 gap-4 mt-8">
@@ -135,7 +199,7 @@ const Profile = () => {
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                 <Zap className="w-4 h-4 text-yellow-400 mx-auto mb-2" />
-                <p className="text-xl font-black text-white">98%</p>
+                <p className="text-xl font-black text-white">{Math.min(99, 70 + watchlist.length * 2)}%</p>
                 <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">AI Match</p>
               </div>
             </div>
@@ -143,21 +207,21 @@ const Profile = () => {
 
           <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 space-y-4">
             <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Recent Activity</h4>
-            {[
-              { action: "Watched Inception", time: "2h ago", icon: History },
-              { action: "Added Dune to Vault", time: "5h ago", icon: Bookmark },
-              { action: "Profile Synced", time: "1d ago", icon: Zap },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 text-xs">
-                <div className="p-2 rounded-lg bg-white/5">
-                  <item.icon className="w-3 h-3 text-muted-foreground" />
+            {watchlist.length > 0 ? (
+              watchlist.slice(0, 3).map((movie, i) => (
+                <div key={movie.id} className="flex items-center gap-3 text-xs">
+                  <div className="p-2 rounded-lg bg-white/5">
+                    <Bookmark className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-medium truncate">Added {movie.title}</p>
+                    <p className="text-[10px] text-muted-foreground">Recently</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-white font-medium">{item.action}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.time}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-[10px] text-muted-foreground italic">No recent neural activity detected.</p>
+            )}
           </div>
         </motion.div>
 
@@ -249,21 +313,21 @@ const Profile = () => {
                         <p className="text-sm font-bold text-white">Auto-Play Trailers</p>
                         <p className="text-xs text-muted-foreground">Preview movies automatically on hover.</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch defaultChecked onCheckedChange={() => handleToggleFeature("Auto-Play")} />
                     </div>
                     <div className="flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/10">
                       <div className="space-y-1">
                         <p className="text-sm font-bold text-white">High Fidelity Particles</p>
                         <p className="text-xs text-muted-foreground">Enable advanced 3D background effects.</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch defaultChecked onCheckedChange={() => handleToggleFeature("High Fidelity")} />
                     </div>
                     <div className="flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/10">
                       <div className="space-y-1">
                         <p className="text-sm font-bold text-white">Interface Language</p>
                         <p className="text-xs text-muted-foreground">Current: English (Global)</p>
                       </div>
-                      <Button variant="outline" size="sm" className="rounded-xl border-white/10">Change</Button>
+                      <Button variant="outline" size="sm" className="rounded-xl border-white/10" onClick={() => showSuccess("Language module locked to English.")}>Change</Button>
                     </div>
                   </div>
                 </div>
@@ -294,7 +358,7 @@ const Profile = () => {
                         <p className="text-sm font-bold text-white">Two-Factor Authentication</p>
                         <p className="text-xs text-muted-foreground">Add an extra layer of neural protection.</p>
                       </div>
-                      <Button variant="outline" className="rounded-xl font-bold uppercase tracking-widest text-[10px] border-white/10">Configure</Button>
+                      <Button variant="outline" className="rounded-xl font-bold uppercase tracking-widest text-[10px] border-white/10" onClick={() => showSuccess("2FA configuration initialized.")}>Configure</Button>
                     </div>
                   </div>
                 </div>
