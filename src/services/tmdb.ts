@@ -1,6 +1,6 @@
 import { Movie } from "@/types/movie";
 
-const API_KEY = "81835962871d82c0339ef1d79628791d";
+const API_KEY = "3e6de8a45463ba8310359da2d236c60e";
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
