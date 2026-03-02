@@ -64,6 +64,7 @@
     "three": "^0.170.0",
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
+    
   },
   "devDependencies": {
     "@dyad-sh/react-vite-component-tagger": "^0.8.0",
