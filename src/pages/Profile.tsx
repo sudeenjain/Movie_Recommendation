@@ -1,30 +1,95 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Mail, Camera, Save, ArrowLeft } from "lucide-react";
+import { User, Mail, Camera, Save, ArrowLeft, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { showSuccess } from "@/utils/toast";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { showSuccess, showError } from "@/utils/toast";
 
 const Profile = () => {
-  const [name, setName] = useState("Commander User");
-  const [email, setEmail] = useState("commander@cineai.com");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    const getProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+      setEmail(user.email || "");
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (data) setName(data.full_name || "");
+      setLoading(false);
+    };
+
+    getProfile();
+  }, [navigate]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess("Profile updated successfully!");
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: name,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+      showSuccess("Profile updated successfully!");
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    showSuccess("Logged out successfully");
+    navigate("/auth");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 pb-32 px-4 md:px-8 max-w-2xl mx-auto">
-      <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8 transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Cinema
-      </Link>
+      <div className="flex justify-between items-center mb-8">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Cinema
+        </Link>
+        <Button variant="ghost" onClick={handleLogout} className="text-red-400 hover:text-red-300 hover:bg-red-400/10 gap-2">
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -43,7 +108,7 @@ const Profile = () => {
             </button>
           </div>
           <div className="text-center">
-            <h1 className="text-3xl font-black tracking-tighter text-white uppercase">{name}</h1>
+            <h1 className="text-3xl font-black tracking-tighter text-white uppercase">{name || "New User"}</h1>
             <p className="text-muted-foreground">Manage your cinematic identity</p>
           </div>
         </div>
@@ -76,24 +141,19 @@ const Profile = () => {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/10 focus-visible:ring-primary"
+                    disabled
+                    className="pl-10 bg-white/5 border-white/10 opacity-50 cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full gap-2 font-black uppercase tracking-widest">
-                <Save className="w-4 h-4" />
+              <Button type="submit" className="w-full gap-2 font-black uppercase tracking-widest" disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save Profile
               </Button>
             </form>
           </CardContent>
         </Card>
-
-        <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 text-center">
-          <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Pro Tip</p>
-          <p className="text-sm text-muted-foreground">Connect your account to sync your watchlist across all your devices.</p>
-        </div>
       </motion.div>
     </div>
   );
