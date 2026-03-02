@@ -25,14 +25,7 @@ const Profile = () => {
         return;
       }
       setEmail(user.email || "");
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      if (data) setName(data.full_name || "");
+      setName(user.user_metadata?.full_name || "");
       setLoading(false);
     };
 
@@ -43,16 +36,9 @@ const Profile = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          full_name: name,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: name }
+      });
 
       if (error) throw error;
       showSuccess("Neural profile updated successfully.");
@@ -121,28 +107,6 @@ const Profile = () => {
               <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
                 <span className="text-muted-foreground">Neural Sync</span>
                 <span className="text-primary">98.2%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-6 space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-              <Activity className="w-3 h-3" /> System Status
-            </h3>
-            <div className="space-y-3">
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: "75%" }}
-                  className="h-full bg-primary"
-                />
-              </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: "45%" }}
-                  className="h-full bg-purple-500"
-                />
               </div>
             </div>
           </div>
