@@ -46,12 +46,15 @@ const Index = () => {
 
   const handleMovieSelect = async (movie: Movie) => {
     setSearchedMovie(movie);
+    setSelectedMovie(movie);
+    setIsDialogOpen(true); // Immediately show details and trailer
+    
     setLoading(true);
     const recs = await getRecommendations(movie.id);
     setRecommendations(recs);
     setLoading(false);
+    
     setActiveTab("home");
-    window.scrollTo({ top: isMobile ? 300 : 500, behavior: "smooth" });
   };
 
   const openDetails = (movie: Movie) => {
@@ -70,11 +73,9 @@ const Index = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 1.5 }}
           >
-            {/* Floating Navigation */}
             <motion.nav 
               initial={{ y: -100 }}
               animate={{ y: 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 100 }}
               className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center bg-gradient-to-b from-black/90 via-black/40 to-transparent backdrop-blur-[2px]"
             >
               <motion.h3 
@@ -94,38 +95,24 @@ const Index = () => {
               </Link>
             </motion.nav>
 
-            {/* Hero Section with Floating Animation */}
             {(activeTab === "home" || activeTab === "search" || activeTab === "ai") && (
               <div className="relative min-h-[60vh] md:h-[80vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-24 md:pt-0 z-10">
                 <motion.div 
-                  animate={{ 
-                    y: [0, -20, 0],
-                    rotate: [0, 1, 0, -1, 0]
-                  }}
-                  transition={{ 
-                    duration: 6, 
-                    repeat: Infinity, 
-                    ease: "easeInOut" 
-                  }}
+                  animate={{ y: [0, -20, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                   className="relative mb-12 text-center"
                 >
                   <h1 className="text-7xl md:text-[12rem] font-black tracking-tighter text-white drop-shadow-[0_0_80px_rgba(0,162,255,0.4)] select-none leading-none">
                     CINE<span className="text-primary">AI</span>
                   </h1>
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1 }}
-                    className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary/60 mt-4"
-                  >
+                  <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary/60 mt-4">
                     The Future of Cinematic Discovery
-                  </motion.p>
+                  </p>
                 </motion.div>
                 
                 <motion.div 
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.5, type: "spring" }}
                   className="w-full max-w-3xl mx-auto px-4"
                 >
                   <SearchBar onSelect={handleMovieSelect} />
@@ -144,7 +131,6 @@ const Index = () => {
             )}
 
             <main className="max-w-7xl mx-auto px-4 pb-20 space-y-24 md:space-y-40 relative z-10">
-              {/* Watchlist Section */}
               {activeTab === "watchlist" && (
                 <motion.section 
                   initial={{ opacity: 0, x: -20 }}
@@ -172,7 +158,6 @@ const Index = () => {
                 </motion.section>
               )}
 
-              {/* Home Content */}
               {activeTab === "home" && (
                 <>
                   <AnimatePresence mode="wait">

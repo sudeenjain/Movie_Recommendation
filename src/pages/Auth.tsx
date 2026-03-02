@@ -2,34 +2,44 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { auth, googleProvider, githubProvider } from "@/lib/firebase";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult
+} from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast";
-import { LogIn, UserPlus, Loader2, Shield, Zap, Globe } from "lucide-react";
+import { LogIn, UserPlus, Loader2, Shield, Zap, Globe, Github, Mail, Phone } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [authMethod, setAuthMethod] = useState<"email" | "phone" | null>(null);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  
   const navigate = useNavigate();
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await signInWithEmailAndPassword(auth, email, password);
         showSuccess("Access Granted. Welcome back, Commander.");
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        showSuccess("Initialization sequence started. Check your email.");
+        await createUserWithEmailAndPassword(auth, email, password);
+        showSuccess("Identity Created. Welcome to CINEAI.");
       }
       navigate("/");
     } catch (error: any) {
@@ -39,9 +49,62 @@ const Auth = () => {
     }
   };
 
+  const handleSocialLogin = async (provider: any) => {
+    setLoading(true);
+    try {
+      await signInWithPopup(auth, provider);
+      showSuccess("Neural link established.");
+      navigate("/");
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupRecaptcha = () => {
+    if (!(window as any).recaptchaVerifier) {
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
+    }
+  };
+
+  const handlePhoneSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      setupRecaptcha();
+      const appVerifier = (window as any).recaptchaVerifier;
+      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      setConfirmationResult(result);
+      showSuccess("Verification code transmitted.");
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmationResult) return;
+    setLoading(true);
+    try {
+      await confirmationResult.confirm(verificationCode);
+      showSuccess("Identity verified.");
+      navigate("/");
+    } catch (error: any) {
+      showError("Invalid verification code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Background Decorative Elements */}
+      <div id="recaptcha-container"></div>
+      
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full animate-pulse delay-700" />
@@ -53,10 +116,6 @@ const Auth = () => {
         className="w-full max-w-md z-10"
       >
         <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(0,162,255,0.1)] relative overflow-hidden">
-          {/* Futuristic Corner Accents */}
-          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-primary/30 rounded-tl-[2.5rem]" />
-          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-primary/30 rounded-br-[2.5rem]" />
-
           <div className="text-center mb-10">
             <motion.div
               initial={{ scale: 0.8 }}
@@ -73,51 +132,87 @@ const Auth = () => {
             </p>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Network ID (Email)</Label>
-              <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {!authMethod ? (
+            <div className="space-y-4">
+              <Button 
+                onClick={() => handleSocialLogin(googleProvider)}
+                className="w-full h-14 gap-3 font-bold rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+              >
+                <Globe className="w-5 h-5 text-blue-400" />
+                Continue with Google
+              </Button>
+              <Button 
+                onClick={() => handleSocialLogin(githubProvider)}
+                className="w-full h-14 gap-3 font-bold rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+              >
+                <Github className="w-5 h-5" />
+                Continue with GitHub
+              </Button>
+              <Button 
+                onClick={() => setAuthMethod("email")}
+                className="w-full h-14 gap-3 font-bold rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+              >
+                <Mail className="w-5 h-5 text-primary" />
+                Continue with Email
+              </Button>
+              <Button 
+                onClick={() => setAuthMethod("phone")}
+                className="w-full h-14 gap-3 font-bold rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+              >
+                <Phone className="w-5 h-5 text-green-400" />
+                Continue with Phone
+              </Button>
+            </div>
+          ) : authMethod === "email" ? (
+            <form onSubmit={handleEmailAuth} className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Network ID</Label>
                 <Input 
                   type="email" 
                   placeholder="commander@cineai.io" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-12 h-14 bg-white/5 border-white/10 focus:border-primary/50 focus:ring-primary/20 rounded-2xl transition-all"
+                  className="h-14 bg-white/5 border-white/10 focus:border-primary/50 rounded-2xl"
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Access Key (Password)</Label>
-              <div className="relative">
-                <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Access Key</Label>
                 <Input 
                   type="password" 
                   placeholder="••••••••" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-12 h-14 bg-white/5 border-white/10 focus:border-primary/50 focus:ring-primary/20 rounded-2xl transition-all"
+                  className="h-14 bg-white/5 border-white/10 focus:border-primary/50 rounded-2xl"
                 />
               </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-14 gap-3 font-black uppercase tracking-widest rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 group" 
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  {isLogin ? <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" /> : <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-                  {isLogin ? "Establish Connection" : "Create Identity"}
-                </>
-              )}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full h-14 font-black uppercase tracking-widest rounded-2xl bg-primary" disabled={loading}>
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? "Establish Connection" : "Create Identity")}
+              </Button>
+              <button onClick={() => setAuthMethod(null)} className="w-full text-xs font-bold text-muted-foreground uppercase tracking-widest">Back to Options</button>
+            </form>
+          ) : (
+            <form onSubmit={confirmationResult ? verifyCode : handlePhoneSignIn} className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">
+                  {confirmationResult ? "Verification Code" : "Phone Number"}
+                </Label>
+                <Input 
+                  type={confirmationResult ? "text" : "tel"} 
+                  placeholder={confirmationResult ? "123456" : "+1234567890"} 
+                  value={confirmationResult ? verificationCode : phoneNumber}
+                  onChange={(e) => confirmationResult ? setVerificationCode(e.target.value) : setPhoneNumber(e.target.value)}
+                  required
+                  className="h-14 bg-white/5 border-white/10 focus:border-primary/50 rounded-2xl"
+                />
+              </div>
+              <Button type="submit" className="w-full h-14 font-black uppercase tracking-widest rounded-2xl bg-primary" disabled={loading}>
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (confirmationResult ? "Verify Identity" : "Send Code")}
+              </Button>
+              <button onClick={() => { setAuthMethod(null); setConfirmationResult(null); }} className="w-full text-xs font-bold text-muted-foreground uppercase tracking-widest">Back to Options</button>
+            </form>
+          )}
 
           <div className="mt-8 text-center">
             <button 

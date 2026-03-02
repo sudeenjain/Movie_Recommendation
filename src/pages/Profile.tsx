@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Mail, Camera, Save, ArrowLeft, LogOut, Loader2, Shield, Activity, Settings } from "lucide-react";
+import { User, Mail, Camera, Save, ArrowLeft, LogOut, Loader2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
+import { updateProfile, signOut } from "firebase/auth";
 import { showSuccess, showError } from "@/utils/toast";
 
 const Profile = () => {
@@ -18,29 +19,24 @@ const Profile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const getProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-      setEmail(user.email || "");
-      setName(user.user_metadata?.full_name || "");
-      setLoading(false);
-    };
-
-    getProfile();
+    const user = auth.currentUser;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setEmail(user.email || user.phoneNumber || "");
+    setName(user.displayName || "");
+    setLoading(false);
   }, [navigate]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth.currentUser) return;
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { full_name: name }
+      await updateProfile(auth.currentUser, {
+        displayName: name
       });
-
-      if (error) throw error;
       showSuccess("Neural profile updated successfully.");
     } catch (error: any) {
       showError(error.message);
@@ -50,7 +46,7 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut(auth);
     showSuccess("Connection terminated.");
     navigate("/auth");
   };
@@ -85,30 +81,19 @@ const Profile = () => {
           className="lg:col-span-1 space-y-6"
         >
           <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
             <div className="relative inline-block mb-6">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-purple-600 p-1">
                 <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-                  <User className="w-16 h-16 text-white" />
+                  {auth.currentUser?.photoURL ? (
+                    <img src={auth.currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
                 </div>
               </div>
-              <button className="absolute bottom-0 right-0 p-3 bg-primary text-primary-foreground rounded-2xl shadow-lg hover:scale-110 transition-transform border-4 border-black">
-                <Camera className="w-4 h-4" />
-              </button>
             </div>
             <h2 className="text-2xl font-black tracking-tighter text-white uppercase">{name || "Commander"}</h2>
             <p className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] mt-2">Elite Operative</p>
-            
-            <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                <span className="text-muted-foreground">Security Level</span>
-                <span className="text-green-400">Class A</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                <span className="text-muted-foreground">Neural Sync</span>
-                <span className="text-primary">98.2%</span>
-              </div>
-            </div>
           </div>
         </motion.div>
 
@@ -124,7 +109,7 @@ const Profile = () => {
               </div>
               <div>
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight">Identity Configuration</h3>
-                <p className="text-xs text-muted-foreground font-medium">Modify your neural signature and access parameters.</p>
+                <p className="text-xs text-muted-foreground font-medium">Modify your neural signature.</p>
               </div>
             </div>
 
@@ -132,38 +117,27 @@ const Profile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Full Designation</Label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-12 h-14 bg-white/5 border-white/10 focus:border-primary/50 focus:ring-primary/20 rounded-2xl transition-all"
-                    />
-                  </div>
+                  <Input 
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-14 bg-white/5 border-white/10 focus:border-primary/50 rounded-2xl"
+                  />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-1">Network Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      id="email"
-                      type="email"
-                      value={email}
-                      disabled
-                      className="pl-12 h-14 bg-white/5 border-white/10 opacity-50 cursor-not-allowed rounded-2xl"
-                    />
-                  </div>
+                  <Input 
+                    id="email"
+                    value={email}
+                    disabled
+                    className="h-14 bg-white/5 border-white/10 opacity-50 cursor-not-allowed rounded-2xl"
+                  />
                 </div>
               </div>
-
-              <div className="pt-6 border-t border-white/5">
-                <Button type="submit" className="w-full md:w-auto px-12 h-14 gap-3 font-black uppercase tracking-widest rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20" disabled={saving}>
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  Commit Changes
-                </Button>
-              </div>
+              <Button type="submit" className="w-full md:w-auto px-12 h-14 gap-3 font-black uppercase tracking-widest rounded-2xl bg-primary" disabled={saving}>
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                Commit Changes
+              </Button>
             </form>
           </div>
         </motion.div>
