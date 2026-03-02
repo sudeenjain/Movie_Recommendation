@@ -9,9 +9,8 @@ import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import IntroAnimation from "@/components/IntroAnimation";
-import VoiceAssistant from "@/components/VoiceAssistant";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
-import { TrendingUp, Bookmark, BrainCircuit, Sparkles, Search as SearchIcon, User } from "lucide-react";
+import { TrendingUp, Bookmark, BrainCircuit, Sparkles, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -62,16 +61,6 @@ const Index = () => {
     window.scrollTo({ top: isMobile ? 300 : 400, behavior: "smooth" });
   };
 
-  const handleVoiceResult = async (query: string) => {
-    setLoading(true);
-    const results = await searchMovies(query);
-    if (results.length > 0) {
-      setMovies(results);
-      setActiveTab("home");
-    }
-    setLoading(false);
-  };
-
   const openDetails = (movie: Movie) => {
     setSelectedMovie(movie);
     setIsDialogOpen(true);
@@ -93,8 +82,6 @@ const Index = () => {
     <div className="min-h-screen text-foreground selection:bg-primary selection:text-primary-foreground pb-32 md:pb-0 overflow-x-hidden">
       <IntroAnimation onComplete={() => setIntroComplete(true)} />
       
-      <VoiceAssistant onResult={handleVoiceResult} />
-
       <AnimatePresence>
         {introComplete && (
           <motion.div
@@ -107,7 +94,7 @@ const Index = () => {
               <h3 className="text-xl font-black tracking-tighter text-white">
                 CINE<span className="text-primary">AI</span> 2.0
               </h3>
-              <Link to="/dashboard">
+              <Link to="/profile">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -129,7 +116,6 @@ const Index = () => {
                   <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_50px_rgba(0,162,255,0.3)] select-none">
                     CINE<span className="text-primary">AI</span>
                   </h1>
-                  <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary/80 -mt-4 md:-mt-8">Intelligence Beyond Cinema</p>
                 </motion.div>
                 
                 <div className="w-full max-w-2xl mx-auto px-4">
