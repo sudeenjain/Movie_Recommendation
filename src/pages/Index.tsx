@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Movie } from "@/types/movie";
-import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP } from "@/services/tmdb";
+import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP, searchMovies } from "@/services/tmdb";
 import MovieCard from "@/components/MovieCard";
 import MovieDialog from "@/components/MovieDialog";
 import SearchBar from "@/components/SearchBar";
@@ -9,11 +9,13 @@ import MoodFilter from "@/components/MoodFilter";
 import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import IntroAnimation from "@/components/IntroAnimation";
+import VoiceAssistant from "@/components/VoiceAssistant";
 import { MovieGridSkeleton } from "@/components/MovieSkeleton";
-import { TrendingUp, Bookmark, BrainCircuit, Sparkles, Search as SearchIcon } from "lucide-react";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { TrendingUp, Bookmark, BrainCircuit, Sparkles, Search as SearchIcon, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -29,20 +31,6 @@ const Index = () => {
   
   const { watchlist } = useWatchlist();
   const isMobile = useIsMobile();
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { damping: 50, stiffness: 400 });
-  const springY = useSpring(mouseY, { damping: 50, stiffness: 400 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
 
   useEffect(() => {
     const loadMovies = async () => {
@@ -74,6 +62,16 @@ const Index = () => {
     window.scrollTo({ top: isMobile ? 300 : 400, behavior: "smooth" });
   };
 
+  const handleVoiceResult = async (query: string) => {
+    setLoading(true);
+    const results = await searchMovies(query);
+    if (results.length > 0) {
+      setMovies(results);
+      setActiveTab("home");
+    }
+    setLoading(false);
+  };
+
   const openDetails = (movie: Movie) => {
     setSelectedMovie(movie);
     setIsDialogOpen(true);
@@ -91,60 +89,58 @@ const Index = () => {
     setActiveTab("home");
   };
 
-  const contentVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1, 
-      transition: { 
-        duration: 1.2, 
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground pb-32 md:pb-0 overflow-x-hidden">
+    <div className="min-h-screen text-foreground selection:bg-primary selection:text-primary-foreground pb-32 md:pb-0 overflow-x-hidden">
       <IntroAnimation onComplete={() => setIntroComplete(true)} />
-
-      {!isMobile && (
-        <motion.div 
-          className="fixed inset-0 pointer-events-none z-0 opacity-40"
-          style={{
-            background: `radial-gradient(600px circle at ${springX}px ${springY}px, rgba(var(--primary-rgb), 0.15), transparent 80%)`
-          }}
-        />
-      )}
+      
+      <VoiceAssistant onResult={handleVoiceResult} />
 
       <AnimatePresence>
         {introComplete && (
           <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={contentVariants}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
           >
-            {/* Hero Section - Only show on Home or Search tabs */}
+            {/* Top Navigation */}
+            <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
+              <h3 className="text-xl font-black tracking-tighter text-white">
+                CINE<span className="text-primary">AI</span> 2.0
+              </h3>
+              <Link to="/dashboard">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-full bg-white/5 border border-white/10 text-white hover:bg-primary/20 hover:border-primary/50 transition-all"
+                >
+                  <User className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            </nav>
+
+            {/* Hero Section */}
             {(activeTab === "home" || activeTab === "search" || activeTab === "ai") && (
               <div className="relative min-h-[50vh] md:h-[70vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-16 md:pt-0 z-10">
-                <motion.div variants={itemVariants} className="relative mb-6 md:mb-8">
-                  <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] select-none">
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  className="relative mb-6 md:mb-8 text-center"
+                >
+                  <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_50px_rgba(0,162,255,0.3)] select-none">
                     CINE<span className="text-primary">AI</span>
                   </h1>
+                  <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary/80 -mt-4 md:-mt-8">Intelligence Beyond Cinema</p>
                 </motion.div>
                 
-                <motion.div variants={itemVariants} className="w-full max-w-2xl mx-auto px-4">
+                <div className="w-full max-w-2xl mx-auto px-4">
                   <SearchBar onSelect={handleMovieSelect} />
-                </motion.div>
+                </div>
 
                 {activeTab === "ai" && (
-                  <motion.div variants={itemVariants} className="pt-10 text-center">
+                  <div className="pt-10 text-center">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 mb-6">Curated Discovery</p>
                     <MoodFilter selected={selectedMood} onSelect={handleMoodSelect} />
-                  </motion.div>
+                  </div>
                 )}
               </div>
             )}
@@ -152,7 +148,7 @@ const Index = () => {
             <main className="max-w-7xl mx-auto px-4 pb-20 space-y-16 md:space-y-32 relative z-10">
               {/* Watchlist Tab View */}
               {activeTab === "watchlist" && (
-                <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 pt-24">
+                <section className="space-y-8 pt-24">
                   <div className="flex items-end justify-between border-b border-white/5 pb-6">
                     <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter">
                       <Bookmark className="text-primary w-8 h-8" />
@@ -171,13 +167,12 @@ const Index = () => {
                       <p className="text-muted-foreground font-bold">Your watchlist is empty</p>
                     </div>
                   )}
-                </motion.section>
+                </section>
               )}
 
               {/* Home Tab View */}
               {activeTab === "home" && (
                 <>
-                  {/* Recommendations Section */}
                   <AnimatePresence mode="wait">
                     {recommendations.length > 0 && (
                       <motion.section
@@ -207,8 +202,7 @@ const Index = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* Main Discovery Section */}
-                  <motion.section variants={itemVariants} className="space-y-8">
+                  <section className="space-y-8">
                     <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-6 gap-6">
                       <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter uppercase">
                         {selectedMood || selectedGenre ? (
@@ -229,23 +223,8 @@ const Index = () => {
                         ))}
                       </div>
                     )}
-                  </motion.section>
+                  </section>
                 </>
-              )}
-
-              {/* Search Tab View (Mobile specific) */}
-              {activeTab === "search" && isMobile && (
-                <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 pt-10">
-                  <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-                    <SearchIcon className="text-primary w-8 h-8" />
-                    <h2 className="text-3xl font-black text-white tracking-tighter">SEARCH</h2>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {movies.slice(0, 10).map((movie) => (
-                      <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
-                    ))}
-                  </div>
-                </motion.section>
               )}
             </main>
 

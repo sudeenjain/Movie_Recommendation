@@ -5,13 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import ThreeBackground from "./components/ThreeBackground";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Force dark mode on the html element
     document.documentElement.classList.add("dark");
   }, []);
 
@@ -20,9 +21,11 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ThreeBackground />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
