@@ -14,8 +14,8 @@ const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 1000); // Wait for exit animation
-    }, 3500);
+      setTimeout(onComplete, 1000);
+    }, 4500);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -23,37 +23,45 @@ const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
+      transition: { staggerChildren: 0.15 },
     },
     exit: {
       opacity: 0,
-      scale: 1.1,
-      filter: "blur(20px)",
-      transition: { duration: 1, ease: "easeInOut" }
+      scale: 1.2,
+      filter: "blur(40px)",
+      transition: { duration: 1.5, ease: [0.22, 1, 0.36, 1] }
     }
   };
 
   const letterVariants = {
     hidden: { 
       opacity: 0, 
-      scale: 4, 
-      z: 100,
-      filter: "blur(20px)",
-      y: 100
+      y: 40,
+      rotateX: -90,
+      filter: "blur(10px)"
     },
     visible: { 
       opacity: 1, 
-      scale: 1, 
-      z: 0,
-      filter: "blur(0px)",
       y: 0,
+      rotateX: 0,
+      filter: "blur(0px)",
       transition: { 
         type: "spring",
-        damping: 12,
-        stiffness: 100,
-        duration: 0.8 
+        damping: 15,
+        stiffness: 150
+      }
+    }
+  };
+
+  const glitchVariants = {
+    animate: {
+      x: [0, -2, 2, -1, 1, 0],
+      opacity: [1, 0.8, 1, 0.9, 1],
+      transition: {
+        duration: 0.2,
+        repeat: Infinity,
+        repeatType: "reverse" as const,
+        repeatDelay: 2
       }
     }
   };
@@ -66,40 +74,59 @@ const IntroAnimation = ({ onComplete }: IntroAnimationProps) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black overflow-hidden"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black overflow-hidden perspective-1000"
         >
-          {/* Cinematic Background Glow */}
+          {/* Deep Space Background */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.2, 0.1] }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.3, scale: 1 }}
+            transition={{ duration: 4 }}
+            className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/30 via-transparent to-transparent"
           />
 
-          <div className="flex items-center justify-center gap-2 md:gap-4">
+          <div className="relative flex items-center justify-center gap-1 md:gap-4">
             {letters.map((char, i) => (
-              <motion.span
+              <motion.div
                 key={i}
                 variants={letterVariants}
-                className={`text-7xl md:text-[12rem] font-black tracking-tighter select-none ${
-                  i >= 4 ? "text-primary" : "text-white"
-                } drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]`}
-                style={{
-                  textShadow: i >= 4 ? "0 0 50px rgba(0,150,255,0.5)" : "none"
-                }}
+                className="relative"
               >
-                {char}
-              </motion.span>
+                <motion.span
+                  variants={glitchVariants}
+                  animate="animate"
+                  className={`text-7xl md:text-[14rem] font-black tracking-tighter select-none inline-block ${
+                    i >= 4 ? "text-primary" : "text-white"
+                  }`}
+                  style={{
+                    textShadow: i >= 4 
+                      ? "0 0 80px rgba(0,162,255,0.6), 0 0 20px rgba(0,162,255,0.4)" 
+                      : "0 0 40px rgba(255,255,255,0.2)"
+                  }}
+                >
+                  {char}
+                </motion.span>
+                
+                {/* Scanning Line per letter */}
+                <motion.div
+                  initial={{ top: "-10%", opacity: 0 }}
+                  animate={{ top: "110%", opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                  className="absolute left-0 right-0 h-[2px] bg-primary/50 blur-[1px] z-10"
+                />
+              </motion.div>
             ))}
           </div>
 
-          {/* Scanning Light Effect */}
+          {/* Global Scanning Beam */}
           <motion.div
-            initial={{ x: "-100%" }}
+            initial={{ x: "-100%", skewX: -20 }}
             animate={{ x: "200%" }}
-            transition={{ duration: 2, delay: 1, ease: "easeInOut" }}
-            className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 pointer-events-none"
+            transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }}
+            className="absolute inset-0 w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"
           />
+
+          {/* Cinematic Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_black_90%)] pointer-events-none" />
         </motion.div>
       )}
     </AnimatePresence>

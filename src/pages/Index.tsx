@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Movie } from "@/types/movie";
-import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP, searchMovies } from "@/services/tmdb";
+import { fetchTrending, discoverMovies, getRecommendations, GENRE_MAP, MOOD_MAP } from "@/services/tmdb";
 import MovieCard from "@/components/MovieCard";
 import MovieDialog from "@/components/MovieDialog";
 import SearchBar from "@/components/SearchBar";
@@ -35,19 +35,12 @@ const Index = () => {
     const loadMovies = async () => {
       setLoading(true);
       let data: Movie[] = [];
-      
-      if (selectedMood) {
-        data = await discoverMovies(MOOD_MAP[selectedMood]);
-      } else if (selectedGenre) {
-        data = await discoverMovies([GENRE_MAP[selectedGenre]]);
-      } else {
-        data = await fetchTrending();
-      }
-      
+      if (selectedMood) data = await discoverMovies(MOOD_MAP[selectedMood]);
+      else if (selectedGenre) data = await discoverMovies([GENRE_MAP[selectedGenre]]);
+      else data = await fetchTrending();
       setMovies(data);
       setLoading(false);
     };
-
     loadMovies();
   }, [selectedGenre, selectedMood]);
 
@@ -58,24 +51,12 @@ const Index = () => {
     setRecommendations(recs);
     setLoading(false);
     setActiveTab("home");
-    window.scrollTo({ top: isMobile ? 300 : 400, behavior: "smooth" });
+    window.scrollTo({ top: isMobile ? 300 : 500, behavior: "smooth" });
   };
 
   const openDetails = (movie: Movie) => {
     setSelectedMovie(movie);
     setIsDialogOpen(true);
-  };
-
-  const handleMoodSelect = (mood: string | null) => {
-    setSelectedMood(mood);
-    setSelectedGenre(null);
-    setActiveTab("home");
-  };
-
-  const handleGenreSelect = (genre: string | null) => {
-    setSelectedGenre(genre);
-    setSelectedMood(null);
-    setActiveTab("home");
   };
 
   return (
@@ -87,100 +68,135 @@ const Index = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 1.5 }}
           >
-            {/* Top Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
-              <h3 className="text-xl font-black tracking-tighter text-white">
-                CINE<span className="text-primary">AI</span> 2.0
-              </h3>
+            {/* Floating Navigation */}
+            <motion.nav 
+              initial={{ y: -100 }}
+              animate={{ y: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
+              className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex justify-between items-center bg-gradient-to-b from-black/90 via-black/40 to-transparent backdrop-blur-[2px]"
+            >
+              <motion.h3 
+                whileHover={{ scale: 1.05 }}
+                className="text-2xl font-black tracking-tighter text-white cursor-default"
+              >
+                CINE<span className="text-primary">AI</span>
+              </motion.h3>
               <Link to="/profile">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2 rounded-full bg-white/5 border border-white/10 text-white hover:bg-primary/20 hover:border-primary/50 transition-all"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-primary/20 hover:border-primary/50 transition-all shadow-xl"
                 >
                   <User className="w-5 h-5" />
                 </motion.button>
               </Link>
-            </nav>
+            </motion.nav>
 
-            {/* Hero Section */}
+            {/* Hero Section with Floating Animation */}
             {(activeTab === "home" || activeTab === "search" || activeTab === "ai") && (
-              <div className="relative min-h-[50vh] md:h-[70vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-16 md:pt-0 z-10">
+              <div className="relative min-h-[60vh] md:h-[80vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-24 md:pt-0 z-10">
                 <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="relative mb-6 md:mb-8 text-center"
+                  animate={{ 
+                    y: [0, -20, 0],
+                    rotate: [0, 1, 0, -1, 0]
+                  }}
+                  transition={{ 
+                    duration: 6, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                  className="relative mb-12 text-center"
                 >
-                  <h1 className="text-6xl md:text-[10rem] font-black tracking-tighter text-white drop-shadow-[0_0_50px_rgba(0,162,255,0.3)] select-none">
+                  <h1 className="text-7xl md:text-[12rem] font-black tracking-tighter text-white drop-shadow-[0_0_80px_rgba(0,162,255,0.4)] select-none leading-none">
                     CINE<span className="text-primary">AI</span>
                   </h1>
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary/60 mt-4"
+                  >
+                    The Future of Cinematic Discovery
+                  </motion.p>
                 </motion.div>
                 
-                <div className="w-full max-w-2xl mx-auto px-4">
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="w-full max-w-3xl mx-auto px-4"
+                >
                   <SearchBar onSelect={handleMovieSelect} />
-                </div>
+                </motion.div>
 
                 {activeTab === "ai" && (
-                  <div className="pt-10 text-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 mb-6">Curated Discovery</p>
-                    <MoodFilter selected={selectedMood} onSelect={handleMoodSelect} />
-                  </div>
+                  <motion.div 
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="pt-12 text-center"
+                  >
+                    <MoodFilter selected={selectedMood} onSelect={(m) => { setSelectedMood(m); setSelectedGenre(null); setActiveTab("home"); }} />
+                  </motion.div>
                 )}
               </div>
             )}
 
-            <main className="max-w-7xl mx-auto px-4 pb-20 space-y-16 md:space-y-32 relative z-10">
-              {/* Watchlist Tab View */}
+            <main className="max-w-7xl mx-auto px-4 pb-20 space-y-24 md:space-y-40 relative z-10">
+              {/* Watchlist Section */}
               {activeTab === "watchlist" && (
-                <section className="space-y-8 pt-24">
-                  <div className="flex items-end justify-between border-b border-white/5 pb-6">
-                    <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter">
-                      <Bookmark className="text-primary w-8 h-8" />
-                      YOUR COLLECTION
+                <motion.section 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-12 pt-32"
+                >
+                  <div className="flex items-end justify-between border-b border-white/10 pb-8">
+                    <h2 className="text-4xl md:text-6xl font-black flex items-center gap-6 text-white tracking-tighter">
+                      <Bookmark className="text-primary w-12 h-12" />
+                      COLLECTION
                     </h2>
                   </div>
                   {watchlist.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-                      {watchlist.map((movie) => (
-                        <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
+                      {watchlist.map((movie, i) => (
+                        <MovieCard key={movie.id} movie={movie} onClick={openDetails} index={i} />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-20 space-y-4">
-                      <Bookmark className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
-                      <p className="text-muted-foreground font-bold">Your watchlist is empty</p>
+                    <div className="text-center py-32 space-y-6">
+                      <Bookmark className="w-20 h-20 text-muted-foreground mx-auto opacity-10" />
+                      <p className="text-muted-foreground text-xl font-bold">Your vault is empty</p>
                     </div>
                   )}
-                </section>
+                </motion.section>
               )}
 
-              {/* Home Tab View */}
+              {/* Home Content */}
               {activeTab === "home" && (
                 <>
                   <AnimatePresence mode="wait">
                     {recommendations.length > 0 && (
                       <motion.section
                         key="recommendations"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="space-y-8"
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="space-y-12"
                       >
-                        <div className="flex items-end justify-between border-b border-white/5 pb-6">
-                          <div className="space-y-1">
-                            <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter">
-                              <BrainCircuit className="text-primary w-8 h-8" />
+                        <div className="flex items-end justify-between border-b border-white/10 pb-8">
+                          <div className="space-y-2">
+                            <h2 className="text-4xl md:text-6xl font-black flex items-center gap-6 text-white tracking-tighter">
+                              <BrainCircuit className="text-primary w-12 h-12" />
                               AI PICKS
                             </h2>
-                            <p className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest">Inspired by <span className="text-primary">"{searchedMovie?.title}"</span></p>
+                            <p className="text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-[0.2em]">Neural match for <span className="text-primary">"{searchedMovie?.title}"</span></p>
                           </div>
                         </div>
                         {loading ? <MovieGridSkeleton /> : (
-                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-                            {recommendations.map((movie) => (
-                              <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
+                            {recommendations.map((movie, i) => (
+                              <MovieCard key={movie.id} movie={movie} onClick={openDetails} index={i} />
                             ))}
                           </div>
                         )}
@@ -188,44 +204,35 @@ const Index = () => {
                     )}
                   </AnimatePresence>
 
-                  <section className="space-y-8">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/5 pb-6 gap-6">
-                      <h2 className="text-3xl md:text-4xl font-black flex items-center gap-4 text-white tracking-tighter uppercase">
-                        {selectedMood || selectedGenre ? (
-                          <Sparkles className="text-primary w-8 h-8" />
-                        ) : (
-                          <TrendingUp className="text-primary w-8 h-8" />
-                        )}
+                  <motion.section 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="space-y-12"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-8 gap-8">
+                      <h2 className="text-4xl md:text-6xl font-black flex items-center gap-6 text-white tracking-tighter uppercase">
+                        {selectedMood || selectedGenre ? <Sparkles className="text-primary w-12 h-12" /> : <TrendingUp className="text-primary w-12 h-12" />}
                         {selectedMood ? selectedMood.replace('-', ' ') : selectedGenre ? selectedGenre : "Trending"}
                       </h2>
                       <div className="w-full md:w-auto">
-                        <GenreFilter selected={selectedGenre} onSelect={handleGenreSelect} />
+                        <GenreFilter selected={selectedGenre} onSelect={(g) => { setSelectedGenre(g); setSelectedMood(null); }} />
                       </div>
                     </div>
                     {loading ? <MovieGridSkeleton count={12} /> : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-                        {movies.map((movie) => (
-                          <MovieCard key={movie.id} movie={movie} onClick={openDetails} />
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
+                        {movies.map((movie, i) => (
+                          <MovieCard key={movie.id} movie={movie} onClick={openDetails} index={i} />
                         ))}
                       </div>
                     )}
-                  </section>
+                  </motion.section>
                 </>
               )}
             </main>
 
-            <MovieDialog
-              movie={selectedMovie}
-              isOpen={isDialogOpen}
-              onClose={() => setIsDialogOpen(false)}
-            />
-            
-            <MobileNav 
-              activeTab={activeTab} 
-              onTabChange={setActiveTab} 
-              watchlistCount={watchlist.length} 
-            />
-
+            <MovieDialog movie={selectedMovie} isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
+            <MobileNav activeTab={activeTab} onTabChange={setActiveTab} watchlistCount={watchlist.length} />
             <Footer />
           </motion.div>
         )}
