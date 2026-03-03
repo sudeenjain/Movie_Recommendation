@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Movie } from "@/types/movie";
 import { getImageUrl, getMovieTrailer, getMovieDetails } from "@/services/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Volume2, VolumeX, PlayCircle, Bookmark, Check } from "lucide-react";
+import { Star, Volume2, VolumeX, PlayCircle, Bookmark, Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWatchlist } from "@/hooks/use-watchlist";
@@ -31,8 +31,8 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
 
   useEffect(() => {
     if (isHovered && !isMobile) {
-      setIsLoading(true);
       hoverTimerRef.current = setTimeout(async () => {
+        setIsLoading(true);
         try {
           const [key, details] = await Promise.all([
             trailerKey ? Promise.resolve(trailerKey) : getMovieTrailer(movie.id),
@@ -44,11 +44,12 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
             setShowTrailer(true);
           }
           if (details?.watch_link) setWatchLink(details.watch_link);
-          setIsLoading(false);
         } catch (error) {
+          console.error("Failed to load trailer preview:", error);
+        } finally {
           setIsLoading(false);
         }
-      }, 600);
+      }, 500); // Slightly faster trigger
     } else {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
       setShowTrailer(false);
@@ -76,6 +77,7 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
       onClick={() => onClick(movie)}
     >
       <div className="aspect-[2/3] relative overflow-hidden bg-neutral-900">
+        {/* Main Poster Image */}
         <motion.img
           src={getImageUrl(movie.poster_path)}
           alt={movie.title}
@@ -86,11 +88,25 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
           )}
         />
 
+        {/* Loading Indicator for Trailer */}
+        <AnimatePresence>
+          {isLoading && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-30"
+            >
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Quick Save Button */}
         <button
           onClick={handleSave}
           className={cn(
-            "absolute top-3 right-3 z-30 p-2.5 rounded-xl backdrop-blur-xl border transition-all duration-300",
+            "absolute top-3 right-3 z-40 p-2.5 rounded-xl backdrop-blur-xl border transition-all duration-300",
             inWatchlist 
               ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
               : "bg-black/40 border-white/10 text-white hover:bg-white/20",
@@ -100,29 +116,31 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
           {inWatchlist ? <Check className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
         </button>
 
+        {/* Trailer Preview Iframe */}
         <AnimatePresence>
           {showTrailer && trailerKey && !isMobile && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10"
+              className="absolute inset-0 z-10 pointer-events-none"
             >
               <div className="absolute inset-0 w-full h-full overflow-hidden">
                 <iframe
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] h-[120%] pointer-events-none scale-125"
-                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailerKey}&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&showinfo=0&origin=${window.location.origin}`}
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400%] h-[150%] scale-110"
+                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailerKey}&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&showinfo=0&playsinline=1`}
                   title="Trailer Preview"
                   allow="autoplay; encrypted-media"
                 />
               </div>
               
+              {/* Mute Toggle */}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsMuted(!isMuted);
                 }}
-                className="absolute top-3 left-3 z-30 p-2 bg-black/60 backdrop-blur-xl rounded-full hover:bg-primary transition-all border border-white/10"
+                className="absolute top-3 left-3 z-40 p-2 bg-black/60 backdrop-blur-xl rounded-full hover:bg-primary transition-all border border-white/10 pointer-events-auto"
               >
                 {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
               </button>
@@ -130,6 +148,7 @@ const MovieCard = ({ movie, onClick, index = 0 }: MovieCardProps) => {
           )}
         </AnimatePresence>
 
+        {/* Overlay Info */}
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent transition-all duration-500 flex flex-col justify-end p-5 z-20",
           isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
